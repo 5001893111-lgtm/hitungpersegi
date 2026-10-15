@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kalkulator Bangun Datar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f6fb; --surface:#ffffff; --ink:#14213d; --muted:#5b6b86; --line:#c9d6ea;
+  --accent:#1d4ed8; --accent-ink:#ffffff; --result:#e8f0ff; --err:#b3261e;
+  --grid:rgba(29,78,216,.07);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1626; --surface:#16213a; --ink:#e8eefc; --muted:#9db0d3; --line:#2b3b5e;
+    --accent:#7aa2ff; --accent-ink:#0e1626; --result:#1d2c4d; --err:#ff8a80; --grid:rgba(122,162,255,.08);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1626; --surface:#16213a; --ink:#e8eefc; --muted:#9db0d3; --line:#2b3b5e;
+  --accent:#7aa2ff; --accent-ink:#0e1626; --result:#1d2c4d; --err:#ff8a80; --grid:rgba(122,162,255,.08);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; color:var(--ink); background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.5;
+}
+main{max-width:720px;margin:0 auto;padding:32px 18px 48px}
+h1{font-size:clamp(2rem,6vw,3rem);font-weight:800;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 24px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tabs button{
+  font:inherit;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;
+  border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:22px}
+.panel h2{margin:0 0 4px;font-size:1.4rem}
+.formula{color:var(--muted);font-size:.95rem;margin:0 0 18px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+label{display:block;font-weight:600;font-size:.95rem;margin-bottom:4px}
+input{
+  width:100%;font:inherit;padding:10px 12px;border-radius:8px;
+  border:1.5px solid var(--line);background:var(--bg);color:var(--ink);
+}
+input.bad{border-color:var(--err)}
+.actions{display:flex;gap:10px;margin-top:18px}
+.go{font:inherit;font-weight:700;padding:11px 22px;border-radius:8px;border:0;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.reset{font:inherit;font-weight:600;padding:11px 18px;border-radius:8px;cursor:pointer;background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.msg{color:var(--err);margin:12px 0 0;min-height:1.4em;font-size:.95rem}
+.out{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.out div{background:var(--result);border-radius:10px;padding:14px 16px}
+.out span{display:block;color:var(--muted);font-size:.9rem}
+.out strong{font-size:1.7rem;font-weight:800;overflow-wrap:anywhere}
+@media (max-width:420px){.out{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Kalkulator Bangun Datar</h1>
+  <p class="sub">Pilih bangun, isi ukurannya, lalu hitung luas dan keliling.</p>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <section class="panel" aria-live="polite">
+    <h2 id="nama"></h2>
+    <p class="formula" id="rumus"></p>
+    <div class="fields" id="fields"></div>
+    <div class="actions">
+      <button class="go" id="hitung" type="button">Hitung</button>
+      <button class="reset" id="reset" type="button">Kosongkan</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <div class="out">
+      <div><span>Luas</span><strong id="luas">-</strong></div>
+      <div><span>Keliling</span><strong id="keliling">-</strong></div>
+    </div>
+  </section>
+</main>
+<script>
+const SHAPES = [
+  {id:"persegi", nama:"Persegi", fields:[["sisi","Sisi"]],
+   rumus:"Luas = sisi × sisi · Keliling = 4 × sisi",
+   hit:v=>({luas:v.sisi*v.sisi, keliling:4*v.sisi})},
+  {id:"persegipanjang", nama:"Persegi Panjang", fields:[["panjang","Panjang"],["lebar","Lebar"]],
+   rumus:"Luas = panjang × lebar · Keliling = 2 × (panjang + lebar)",
+   hit:v=>({luas:v.panjang*v.lebar, keliling:2*(v.panjang+v.lebar)})},
+  {id:"jajargenjang", nama:"Jajar Genjang", fields:[["alas","Alas"],["tinggi","Tinggi"],["sisiMiring","Sisi miring"]],
+   rumus:"Luas = alas × tinggi · Keliling = 2 × (alas + sisi miring)",
+   hit:v=>({luas:v.alas*v.tinggi, keliling:2*(v.alas+v.sisiMiring)})},
+  {id:"belahketupat", nama:"Belah Ketupat", fields:[["d1","Diagonal 1"],["d2","Diagonal 2"],["sisi","Sisi"]],
+   rumus:"Luas = (diagonal 1 × diagonal 2) ÷ 2 · Keliling = 4 × sisi",
+   hit:v=>({luas:v.d1*v.d2/2, keliling:4*v.sisi})},
+  {id:"layanglayang", nama:"Layang-Layang", fields:[["d1","Diagonal 1"],["d2","Diagonal 2"],["a","Sisi A"],["b","Sisi B"]],
+   rumus:"Luas = (diagonal 1 × diagonal 2) ÷ 2 · Keliling = 2 × (sisi A + sisi B)",
+   hit:v=>({luas:v.d1*v.d2/2, keliling:2*(v.a+v.b)})},
+  {id:"trapesium", nama:"Trapesium", fields:[["a","Sisi sejajar A"],["b","Sisi sejajar B"],["c","Sisi C"],["d","Sisi D"],["t","Tinggi"]],
+   rumus:"Luas = ((A + B) × tinggi) ÷ 2 · Keliling = A + B + C + D",
+   hit:v=>({luas:(v.a+v.b)*v.t/2, keliling:v.a+v.b+v.c+v.d})}
+];
+let cur = SHAPES[0];
+const $ = id => document.getElementById(id);
+const fmt = n => new Intl.NumberFormat("id-ID",{maximumFractionDigits:4}).format(n);
+
+function render(){
+  $("nama").textContent = cur.nama;
+  $("rumus").textContent = cur.rumus;
+  $("fields").innerHTML = cur.fields.map(([k,l]) =>
+    `<div><label for="f_${k}">${l}</label><input id="f_${k}" data-k="${k}" type="number" inputmode="decimal" min="0" step="any"></div>`).join("");
+  $("luas").textContent = "-"; $("keliling").textContent = "-"; $("msg").textContent = "";
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === cur.id));
+  document.querySelectorAll("#fields input").forEach(i => i.addEventListener("keydown", e => { if(e.key==="Enter") hitung(); }));
+}
+function hitung(){
+  const v = {}; let ok = true;
+  document.querySelectorAll("#fields input").forEach(i => {
+    const n = parseFloat(i.value);
+    const bad = isNaN(n) || n <= 0;
+    i.classList.toggle("bad", bad);
+    if(bad) ok = false; else v[i.dataset.k] = n;
+  });
+  if(!ok){
+    $("msg").textContent = "Isi semua kolom dengan angka lebih dari 0.";
+    $("luas").textContent = "-"; $("keliling").textContent = "-";
+    return;
+  }
+  $("msg").textContent = "";
+  const r = cur.hit(v);
+  $("luas").textContent = fmt(r.luas);
+  $("keliling").textContent = fmt(r.keliling);
+}
+$("tabs").innerHTML = SHAPES.map(s => `<button type="button" role="tab" data-id="${s.id}">${s.nama}</button>`).join("");
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  cur = SHAPES.find(s => s.id === b.dataset.id); render();
+});
+$("hitung").addEventListener("click", hitung);
+$("reset").addEventListener("click", render);
+render();
+</script>
+</body>
+</html>
