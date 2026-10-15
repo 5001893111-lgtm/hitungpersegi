@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kalkulator Bangun Datar</title>
+<title>Kalkulator Luas dan Keliling Persegi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -69,7 +69,7 @@ input.bad{border-color:var(--err)}
 </head>
 <body>
 <main>
-  <h1>Kalkulator Bangun Datar</h1>
+  <h1>Kalkulator Luas dan Keliling Persegi</h1>
   <p class="sub">Pilih bangun, isi ukurannya, lalu hitung luas dan keliling.</p>
   <div class="tabs" role="tablist" id="tabs"></div>
   <section class="panel" aria-live="polite">
@@ -113,7 +113,7 @@ const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat("id-ID",{maximumFractionDigits:4}).format(n);
 
 function render(){
-  $("nama").textContent = cur.nama;
+  $("nama").textContent = cur.judul || cur.nama;
   $("rumus").textContent = cur.rumus;
   $("fields").innerHTML = cur.fields.map(([k,l]) =>
     `<div><label for="f_${k}">${l}</label><input id="f_${k}" data-k="${k}" type="number" inputmode="decimal" min="0" step="any"></div>`).join("");
